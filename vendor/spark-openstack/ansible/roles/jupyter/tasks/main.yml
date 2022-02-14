@@ -1,0 +1,78 @@
+---
+
+- include: prepare.yml
+  when: not skip_install | default(False)
+
+# - name: setup toree
+#   become: yes
+#   shell: /opt/spark-openstack-venv/bin/python -m jupyter toree install
+#   when: not skip_install | default(False)
+#   tags:
+#   - install
+#   - jupyter_install
+
+- name: create config
+  shell: /opt/spark-openstack-venv/bin/python -m jupyter notebook --generate-config -y
+  when: not skip_install | default(False)
+  become: false
+  tags:
+  - install
+  - jupyter_install
+
+- name: change jupyter_notebook_config.py
+  lineinfile:
+    dest=/home/{{ hadoop_user }}/.jupyter/jupyter_notebook_config.py
+    state=present insertafter=EOF
+    line="c.NotebookApp.ip = '0.0.0.0'"
+    create=true
+  tags:
+  - install
+  - jupyter_install
+
+# - name: copy toree kernel config
+#   become: yes
+#   file: path=/usr/local/share/jupyter/kernels/toree_python3 state=directory
+#   tags:
+#   - install
+#   - jupyter_install
+
+# - name: copy toree kernel config
+#   become: yes
+#   template: src=toree_kernel.json.j2 dest=/usr/local/share/jupyter/kernels/toree_python3/kernel.json
+#   tags:
+#   - install
+#   - jupyter_install
+
+# - name: Install Scala
+#   tags:
+#   - install
+#   - jupyter_install
+#   - scala
+#   block:
+#   - name: Check Scala
+#     command: dpkg-query -W scala
+#     register: scala_check
+#     failed_when: scala_check.rc > 1
+#     changed_when: scala_check.rc == 1
+#   - name: Download Scala
+#     get_url:
+#       url=http://www.scala-lang.org/files/archive/scala-2.13.7.deb
+#       dest=/tmp/scala.deb
+#     when: not skip_install | default(False) and scala_check.rc == 1
+# 
+#   - name: get dependencies
+#     package: name=libjansi-java state=present
+#     become: yes
+#     when: not skip_install | default(False) and scala_check.rc == 1
+# 
+#   - name: install scala
+#     become: yes
+#     apt: deb=/tmp/scala.deb
+#     when: not skip_install | default(False) and scala_check.rc == 1
+
+- include: service.yml
+  become: yes
+  become_user: root
+  when: install_as_service
+
+- debug: msg="jupyter install finished on {{ hostvars[inventory_hostname].ansible_ssh_host }} (python_version=3)"

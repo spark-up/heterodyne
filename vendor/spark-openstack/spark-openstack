@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd "$(dirname "$0")" || exit 1
+
+if [ -f ./admin-openrc.sh ]; then
+	source ./admin-openrc.sh
+fi
+cd ./ansible || exit 1
+
+exec python ./spark_openstack.py "$@"

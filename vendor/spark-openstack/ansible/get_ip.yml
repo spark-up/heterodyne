@@ -1,0 +1,18 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Register master facts
+      os_server_info:
+        filters:
+          metadata:
+            group: "{{ cluster_name }}_{{ extended_role }}"
+      register: manager_info
+      no_log: True
+    - debug: >-
+        msg="{{
+          manager_info['openstack_servers'][0]['interface_ip']
+          if manager_info['openstack_servers'][0]['interface_ip'] != ''
+          else manager_info['openstack_servers'][0]['private_v4']
+        }}"

@@ -1,0 +1,5 @@
+{% for host in groups[cluster_name +'_slaves'] %}
+{{ hostvars[host].openstack.name }}
+{% endfor %}{# {% if use_yarn %}
+{{ active_master }}
+{% endif %} #}

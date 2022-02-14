@@ -1,0 +1,24 @@
+---
+
+- name: acknowledge existing servers
+  os_server_info:
+  register: existing_info
+
+- name: debug
+  set_fact: 'alive_servers="{{ alive_servers | default([]) | union([item.name]) }}"'
+  when: item['metadata']['group'] is defined and (cluster_name + '_master' == item['metadata']['group'] or cluster_name + '_slaves' == item['metadata']['group'] or cluster_name + '_runner' == item['metadata']['group'])
+  with_items: "{{ existing_info['openstack_servers'] }}"
+  no_log: True
+
+- name: The following instances will be destroyed now
+  debug: var=alive_servers
+
+- name: destroy cluster instances
+  os_server:
+    state: absent
+    name: "{{ item }}"
+  with_items: "{{ alive_servers }}"
+  retries: 3
+
+- name: destroy security group
+  include: destroy_security_group.yml

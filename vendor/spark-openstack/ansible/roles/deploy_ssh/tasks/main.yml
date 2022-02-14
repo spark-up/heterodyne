@@ -1,0 +1,70 @@
+---
+
+- name: create directory for ssh-keys if doesn't exist
+  local_action: file path="files/keys" state=directory
+
+# - name: Check if instances really got floating IPs
+#   local_action: fail msg="One of the instances didn't get floating IP address"
+#   when: hostvars[inventory_hostname].openstack.public_v4 == '' and floating_ip_pool != 'None'
+#   fail: msg="One of the instances didn't get floating IP address"
+
+# - name: Wait for ssh-server to start
+#   local_action:
+#     wait_for:
+#       host: "{{ hostvars[inventory_hostname].openstack.public_v4 }}"
+#       port: 22
+#       search_regex: OpenSSH
+#       delay: 3
+#       timeout: 300
+#   when: floating_ip_pool != 'None'
+
+- name: Install Python 3 if missing
+  become: yes
+  apt:
+    pkg:
+      - python3-minimal
+
+- name: Generating key for hadoop user
+  user: name={{ hadoop_user }} generate_ssh_key=yes
+  when: inventory_hostname == active_master_inventory_hostname
+
+- name: Get public key
+  fetch: src="/home/{{ hadoop_user }}/.ssh/id_rsa.pub" dest="files/keys/{{ cluster_name }}.pub" flat=yes
+  when: inventory_hostname == active_master_inventory_hostname
+
+- name: Get private key
+  fetch: src="/home/{{ hadoop_user }}/.ssh/id_rsa" dest="files/keys/{{ cluster_name }}" flat=yes
+  when: inventory_hostname == active_master_inventory_hostname
+
+- name: Deploy authorized keys
+  become: yes
+  authorized_key: user={{ hadoop_user }} key={{ lookup('file', 'files/keys/{{ cluster_name }}.pub') }}
+
+- name: Deploy ssh-keys
+  become: yes
+  copy: src="files/keys/{{ cluster_name }}" dest="/home/{{ hadoop_user }}/.ssh/{{ cluster_name }}"
+
+- name: Distribute ssh config
+  become: yes
+  template: src=templates/config.j2 dest="/home/{{ hadoop_user }}/.ssh/config"
+
+- name: Modify /etc/hosts
+  become: yes
+  blockinfile:
+    path: /etc/hosts
+    backup: yes
+    marker: '# {mark} ANSIBLE MANAGED BLOCK {{ hostvars[item].openstack.interface_ip }}'
+    block: |
+      {{ hostvars[item].openstack.interface_ip }} {{ hostvars[item].openstack.name }}
+  with_items: "{{ ansible_play_batch }}"
+
+- name: Modify /etc/hosts (on ansible manager node)
+  become: yes
+  blockinfile:
+    path: /etc/hosts
+    backup: yes
+    marker: '# {mark} ANSIBLE MANAGED BLOCK {{ hostvars[item].openstack.name }}'
+    block: |
+      {{ hostvars[item].openstack.interface_ip }} {{ hostvars[item].openstack.name }}
+  with_items: "{{ ansible_play_batch }}"
+  delegate_to: localhost

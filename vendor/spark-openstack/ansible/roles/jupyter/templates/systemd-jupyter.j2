@@ -1,0 +1,12 @@
+[Unit]
+Description=Job that runs jupyter daemon
+Documentation=man:jupyter(1)
+
+[Service]
+User={{ hadoop_user }}
+WorkingDirectory=/home/{{ hadoop_user }}
+ExecStart=/opt/spark-openstack-venv/bin/python -m jupyter lab --no-browser
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

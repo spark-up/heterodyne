@@ -1,0 +1,73 @@
+---
+
+- hosts: localhost
+  tasks:
+    - include_role:
+        name: create
+      when: create_cluster is defined and create_cluster == true or act == "destroy"
+      tags: create
+    - include_role:
+        name: os_facts
+      when: act != "destroy"
+      tags: always
+
+- hosts: "{{ cluster_name }}_master:{{ cluster_name }}_slaves"
+  tags: prepare
+  tasks:
+    - include_role:
+        name: deploy_ssh
+      vars:
+        hadoop_user: ubuntu
+      when: create_cluster is defined and create_cluster == true
+    - include_role:
+        name: cpus
+      tags: always
+    - include_role:
+        name: mem_mb
+      tags: always
+
+
+- hosts: "{{ cluster_name }}_master:{{ cluster_name }}_slaves"
+  become: yes
+  tags: install
+  tasks:
+    - name: install base
+      include_role:
+        name: basic
+      when: create_cluster is defined and create_cluster
+      tags: create
+    - name: install Spark
+      include_role:
+        name: spark_common
+      tags: spark
+      when: deploy_spark
+    - name: install cassandra
+      include_role:
+        name: cassandra
+      when: deploy_cassandra
+      tags: extra
+    - name: mountnfs
+      include_role:
+        name: mountnfs
+      when: mountnfs
+      tags: extra
+
+- hosts: "{{ cluster_name }}_master"
+  tags: deploy
+  tasks:
+    - include_role:
+        name: spark_master
+      when: deploy_spark
+      tags:
+        - deploy
+        - spark
+    - include_role:
+        name: jupyter
+      vars:
+        install_as_service: True
+      when: deploy_jupyter
+    - include_role:
+        name: jupyterhub
+      vars:
+        python_version: 3
+      when: deploy_jupyterhub

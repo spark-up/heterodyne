@@ -1,0 +1,32 @@
+---
+- include: install.yml
+  when: not restart|default(False)
+  tags:
+  - install
+  - cassandra
+  - cassandra_install
+
+- include: config.yml
+  become: yes
+  tags:
+  - install
+  - cassandra
+  - cassandra_install
+  - cassandra_config
+
+- include: start.yml
+  become: yes
+  when: not restart|default(False)
+  tags:
+  - start
+  - cassandra
+  - cassandra_start
+
+- include: restart.yml
+  become: yes
+  when: restart|default(False)
+  tags:
+  - restart
+  - cassandra_restart
+- set_fact:
+    cassandra_completed: true

@@ -1,0 +1,127 @@
+---
+
+#FIXME: need full path to be included directly
+
+- block:
+  - name: Add deadsnakes PPA
+    become: yes
+    apt_repository:
+      repo: ppa:deadsnakes/ppa
+
+  - name: Install Python system packages
+    apt:
+      pkg:
+        # Core
+        - python3
+        - python3-dev
+        - python3-pip
+        - python3-setuptools
+        - python3-venv
+        - python3-wheel
+        # Packages
+        - python3-scipy
+        - python3-tk # needed for pyspark
+        # Python 3.7
+        - python3.7
+        - python3.7-dev
+        - python3.7-venv
+        - python3.7-distutils
+        # Deps
+        - libfreetype6-dev
+        - libpng-dev
+        - pkg-config
+    register: result
+    ignore_errors: True
+    until: result is success
+    retries: 3
+    # TODO: failures are ignored
+
+  - name: Install packaging dependencies in venv (Python3.7 with PySpark)
+    become: yes
+    pip:
+      name:
+        - pip
+        - setuptools
+        - wheel
+      state: present
+      virtualenv: /opt/py3.7-pyspark2.4-venv/
+      virtualenv_command: /usr/bin/python3.7 -m venv --prompt pyspark2.4
+    register: py37_venv
+    until: result is success
+    retries: 3
+
+  - name: Install pip packages (Jupyter Host)
+    become: yes
+    pip:
+      name:
+        - jupyterlab
+        - matplotlib
+        - numpy
+        - pandas
+        - pyparsing
+        - scikit-learn
+        - scipy
+        - seaborn
+        # - "toree~={{ toree_version }}"
+      state: present
+      virtualenv: /opt/spark-openstack-venv/
+      virtualenv_command: /usr/bin/python3 -m venv
+    register: py38_venv
+    ignore_errors: True
+    until: result is success
+    retries: 3
+    # async: 1000
+    # poll: 0
+
+  - name: Install pip packages (Python3.7 with PySpark)
+    become: yes
+    pip:
+      name:
+        - jupyter
+        - matplotlib
+        - numpy
+        - pandas
+        - pyparsing
+        - scikit-learn
+        - scipy
+        - seaborn
+        - pyspark==2.4.8
+      state: present
+      virtualenv: /opt/py3.7-pyspark2.4-venv/
+      virtualenv_command: /usr/bin/python3.7 -m venv --prompt pyspark2.4
+    register: py37_venv
+    ignore_errors: True
+    until: result is success
+    retries: 3
+    # async: 1000
+    # poll: 0
+
+  # - name: Wait on Async
+  #   async_status:
+  #     jid: "{{ item }}"
+  #   loop:
+  #     - "{{ py37_venv.ansible_job_id }}"
+  #     - "{{ py38_venv.ansible_job_id }}"
+  #   register: async_result
+  #   until: async_result.finished
+  #   retries: 30
+
+  - name: Install PySpark Kernel
+    become: yes
+    command:
+      argv:
+        - /opt/py3.7-pyspark2.4-venv/bin/ipython
+        - kernel
+        - install
+        - --prefix
+        - /opt/py3.7-pyspark2.4-venv/
+        - --name
+        - py37-pyspark2.4
+        - --display-name
+        - 'Python 3.7 (PySpark 2.4)'
+
+  become: True
+  become_user: root
+  tags:
+  - install
+  - jupyter_install

@@ -1,0 +1,5 @@
+---
+
+- file: path=/lib/systemd/system/ state=directory
+- template: src=systemd-jupyter.j2 dest=/lib/systemd/system/jupyter.service mode=0644
+- service: name=jupyter state=started enabled=yes

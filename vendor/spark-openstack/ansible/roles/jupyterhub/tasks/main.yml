@@ -1,0 +1,33 @@
+---
+
+- name: Add nodejs LTS repo
+  become: yes
+  shell: "curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -"
+
+- name: Install necessary packages
+  become: yes
+  apt: name={{ item }} state=present
+  with_items:
+    - curl
+    - python-software-properties
+    - nodejs
+
+- debug: var=python_version
+- block:
+  - become: yes
+    npm:
+      global: true
+      name: configurable-http-proxy
+
+  - name: install pip packages
+    become: yes
+    pip: name={{ item }} state=present executable=pip3
+    with_items:
+      - jupyterhub
+
+  - copy: src=jupyterhub_config.py dest=/home/{{ hadoop_user }}
+  tags:
+  - install
+  - jupyterhub_install
+
+

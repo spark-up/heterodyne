@@ -1,0 +1,8 @@
+[submodule "vendor/zoo"]
+	path = vendor/zoo
+	url = git@github.com:pvn25/ML-Data-Prep-Zoo.git
+	branch = master
+[submodule "vendor/spark-openstack"]
+	path = vendor/spark-openstack
+	url = git@github.com:0az/spark-openstack.git
+	branch = master
