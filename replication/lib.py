@@ -25,9 +25,9 @@ from nltk.tokenize import word_tokenize
 from pandas.api.types import is_numeric_dtype
 from sklearn.preprocessing import StandardScaler
 
-from .common import abs_limit_10000 as abs_limit
-from .constants import LEGACY_NAME_MAP
-from .lazy_resources import (
+from common import abs_limit_10000 as abs_limit
+from replication.constants import LEGACY_NAME_MAP
+from replication.lazy_resources import (
     fetch_nltk_data,
     load_cnn,
     load_keras_name_tokenizer,
@@ -53,7 +53,7 @@ URL_RE = re.compile(
 
 EMAIL_RE = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b')
 
-STOPWORDS = set(load_stopwords.words('english'))
+STOPWORDS = set(load_stopwords())
 
 
 def summary_stats(df, keys):

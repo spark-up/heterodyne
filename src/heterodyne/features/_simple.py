@@ -13,23 +13,35 @@ from pyspark.sql.types import (
 
 from .util import ColumnFn, is_struct_field_numeric
 
+def count_all_nan(c):
+    return F.count((c == '' ) | \
+                            c.isNull() | \
+                            F.isnan(c) |
+                            (c == None))
+
 SIMPLE_FEATURES: dict[str, ColumnFn] = {
     'count': F.count,
     'distinct': F.count_distinct,
     'distinct_percent': lambda c: 100 * F.count_distinct(c) / F.count(c),
+
+    'nans': lambda c: count_all_nan(c),
+    'nans_percent': lambda c: 100 * count_all_nan(c) / F.count(c),
 }
 
+
 SIMPLE_NUMERIC_FEATURES: dict[str, ColumnFn] = {
-    'nans': lambda c: F.count(F.isnan(c)),
-    'nans_percent': lambda c: 100 * F.count(F.isnan(c)) / F.count(c),
+    #'nans': lambda c: F.count(F.isnan(c) | c.isNull()), # added or isNull
+    #'nans': lambda c: count_all_nan(c),
+    #'nans_percent': lambda c: 100 * F.count(F.isnan(c)) / F.count(c),
+    #'nans_percent': lambda c: 100 * count_all_nan(c) / F.count(c),
     'mean': F.mean,
     'std': F.stddev,
     'min': F.min,
     'max': F.max,
 }
 
-_LONG_FEATURES = list(SIMPLE_FEATURES.keys()) + ['nans']
-_DOUBLE_FEATURES = list(SIMPLE_NUMERIC_FEATURES.keys())[1:]
+_LONG_FEATURES = list(SIMPLE_FEATURES.keys()) #+ ['nans']
+_DOUBLE_FEATURES = list(SIMPLE_NUMERIC_FEATURES.keys())#[1:]
 
 _FEATURES = list(SIMPLE_FEATURES.keys()) + list(SIMPLE_NUMERIC_FEATURES.keys())
 
@@ -81,6 +93,9 @@ def simple_features_impl(
         (fn(col(c)) if is_struct_field_numeric(df.schema[c]) else lit(0)).alias(
             f'{c}::{name}'
         )
+        # (fn(col(c))).alias(
+        #     f'{c}::{name}'
+        # )
         for c in cols
         for name, fn in sn_features.items()
     ]

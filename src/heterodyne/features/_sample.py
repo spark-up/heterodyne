@@ -109,14 +109,14 @@ def sample_features_from_values(
     # NOTE: Bug in original means that delimiter_count will always equal whitespace_count
     df['is_delimited'] = values.str.match(IS_DELIMITED_RE)
     df['delimiter_count'] = values.str.count(DELIMITER_RE)
-    df['word_count'] = values.str.split(' ', regex=False).map(len)  # type: ignore
+    df['word_count'] = values.str.split(' ', regex=False).map(len, na_action='ignore')  # type: ignore, na_action added
     df['char_count'] = values.str.len()
     df['whitespace_count'] = values.str.count(' ')
     df['is_url'] = values.str.match(URL_RE)
     df['is_email'] = values.str.match(EMAIL_RE)
     df['is_datetime'] = pd.to_datetime(values, errors='coerce').notnull()
 
-    df['stopword_count'] = values.map(_stopword_count)
+    df['stopword_count'] = values.map(_stopword_count, na_action='ignore') #na_action added
 
     aggs: dict[str, str | Callable] = {'value': list}
     is_cols = [

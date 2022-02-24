@@ -20,7 +20,7 @@ import pandas as pd
 from nltk.corpus import stopwords as _stopwords
 from nltk.corpus.util import LazyCorpusLoader
 from nltk.downloader import Downloader
-from nltk.downloader import download as _nltk_download
+#from nltk.downloader import download as _nltk_download
 
 if TYPE_CHECKING:
     import keras
